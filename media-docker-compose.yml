@@ -1,0 +1,105 @@
+version: '3'
+
+name: 'media'
+
+services:
+  plex:
+    image: plexinc/pms-docker:latest
+    restart: unless-stopped
+    environment:
+      - TZ=America/Sao_Paulo
+      - PUID=1000
+      - PGID=1000
+      - VA_DRIVER=IHD
+      - PLEX_HW_TRANS_MAX=16
+    volumes:
+      - /home/geloodev/pirataria/plex/config:/config
+      - /home/geloodev/pirataria/plex/data:/data
+      - /home/geloodev/pirataria/plex/transcode:/transcode
+      - /home/geloodev/pirataria/media:/media
+    devices:
+      - /dev/dri:/dev/dri
+      - /dev/bus/usb:/dev/bus/usb
+    network_mode: host
+
+  qbittorrent:
+    image: linuxserver/qbittorrent:latest
+    restart: unless-stopped
+    environment:
+      - TZ=America/Sao_Paulo
+      - WEBUI_PORT=8080
+      - PUID=1000
+      - PGID=1000
+    volumes:
+      - /home/geloodev/pirataria/qbittorrent/config:/config
+      - /home/geloodev/pirataria/qbittorrent/downloads:/downloads
+    ports: 
+      - '8080:8080'
+      - '62609:62609'
+
+  jackett:
+    image: ghcr.io/linuxserver/jackett:latest
+    restart: unless-stopped
+    environment:
+      - TZ=America/Sao_Paulo
+      - PUID=1000
+      - PGID=1000
+    volumes:
+      - /home/geloodev/pirataria/jackett/downloads:/downloads
+      - /home/geloodev/pirataria/jackett/config:/config
+    ports:
+      - '9117:9117'
+
+  radarr:
+    image: ghcr.io/linuxserver/radarr:latest
+    restart: unless-stopped
+    depends_on:
+      - qbittorrent
+    environment:
+      - TZ=America/Sao_Paulo
+      - PUID=1000
+      - PGID=1000
+    volumes:
+      - /home/geloodev/pirataria/radarr/appdata/config:/config
+      - /home/geloodev/pirataria/qbittorrent/downloads:/downloads
+      - /home/geloodev/pirataria/media/movies:/movies
+    ports:
+      - '7878:7878'
+
+  sonarr:
+    image: ghcr.io/linuxserver/sonarr:latest
+    restart: unless-stopped
+    depends_on:
+      - qbittorrent
+    environment:
+      - TZ=America/Sao_Paulo
+      - PUID=1000
+      - PGID=1000
+    volumes:
+      - /home/geloodev/pirataria/sonarr/appdata/config:/config
+      - /home/geloodev/pirataria/qbittorrent/downloads:/downloads
+      - /home/geloodev/pirataria/media/tv:/tv
+    ports:
+      - '8989:8989'
+
+  prowlarr:
+    image: ghcr.io/hotio/prowlarr:latest
+    restart: unless-stopped
+    depends_on:
+      - flaresolverr
+    environment:
+      - TZ=America/Sao_Paulo
+      - PUID=1000
+      - PGID=1000
+    volumes:
+      - /home/geloodev/pirataria/prowlarr/config:/config
+    ports:
+      - '9696:9696'
+
+  flaresolverr:
+    image: ghcr.io/flaresolverr/flaresolverr:latest
+    restart: unless-stopped
+    volumes:
+      - /home/geloodev/pirataria/flaresolverr/config:/config
+    ports:
+      - '8191:8191'
